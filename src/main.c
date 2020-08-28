@@ -16,6 +16,7 @@
 #include <lwm2m_carrier.h>
 #endif
 #include "app_mqtt.h"
+#include <date_time.h>
 
 #if defined(CONFIG_BSD_LIBRARY)
 
@@ -90,12 +91,22 @@ static void modem_configure(void)
 void main(void)
 {
 	int err;
+	s64_t unix_time_ms;
 
 	printk("The MQTT simple sample started\n");
 
 	modem_configure();
 
 	app_mqtt_init();
+
+	date_time_update();
+
+	// Add some delay to ensure the date_time can be read from the server before we ask for a date_time update
+	k_sleep(K_SECONDS(10));
+
+	err = date_time_now(&unix_time_ms);
+	// TODO: Figure out why signed 64-bit numbers can't be printed directly using %lld
+	printk("Date_time: %i %i\n", (u32_t)(unix_time_ms/1000000), (u32_t)(unix_time_ms%1000000));
 
 	do {
 		err = app_mqtt_run();
