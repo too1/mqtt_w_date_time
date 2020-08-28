@@ -1,9 +1,11 @@
 .. _mqtt_simple_sample:
 
-nRF9160: Simple MQTT
-####################
+nRF9160: Simple MQTT with DateTime
+##################################
 
 The Simple MQTT sample demonstrates how to easily connect an nRF9160 SiP to an MQTT broker and send and receive data.
+
+MQTT functionality moved into a separate file, and date_time.c library support added. 
 
 Overview
 *********
@@ -46,29 +48,9 @@ Troubleshooting
 Public MQTT brokers might be unstable.
 If you experience problems connecting to the MQTT broker, try switching to another broker by changing the value of the ``MQTT_BROKER_HOSTNAME`` configuration option.
 
-
-Dependencies
-************
-
-This sample uses the following libraries:
-
-From |NCS|
-  * ``drivers/lte_link_control``
-
-From nrfxlib
-  * :ref:`nrfxlib:bsdlib`
-
-From Zephyr
-  * :ref:`MQTT <zephyr:networking_api>`
-
-In addition, it uses the following samples:
-
-From |NCS|
-  * :ref:`secure_partition_manager`
-
-References
-**********
-
-See the following page for information about how to enable Transport Security Layer in the Simple MQTT sample:
-
-    * `Enabling and testing TLS in mqtt_simple`_
+- date_time.c fix:
+If date_time.c won't build, make the following change to line 166:
+from this: 
+K_SECONDS(CONFIG_DATE_TIME_NTP_QUERY_TIME_SECONDS),
+to this:
+K_SECONDS(CONFIG_DATE_TIME_NTP_QUERY_TIME_SECONDS).ticks,
