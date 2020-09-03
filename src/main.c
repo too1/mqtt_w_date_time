@@ -17,6 +17,7 @@
 #endif
 #include "app_mqtt.h"
 #include <date_time.h>
+#include <time.h>
 
 #if defined(CONFIG_BSD_LIBRARY)
 
@@ -91,6 +92,17 @@ static void modem_configure(void)
 #define TIMER_RELOAD_VALUE_MS 10000
 s64_t unix_time_ms = 0;
 
+char *time_to_string(s64_t time_ms)
+{
+	static char time_string[80];
+	time_t time = time_ms / 1000;
+	struct tm local_time;
+	local_time = *localtime(&time);
+	strftime(time_string, 80, "%x - %H:%M:%S", &local_time);
+	return time_string;
+}
+
+
 void get_current_time_callback(struct k_timer *timer_id)
 {
 	int err = 0;
@@ -109,6 +121,7 @@ void get_current_time_callback(struct k_timer *timer_id)
 	if(err == 0){
 		printk("Time update:\n");
 		printk("  Unix time ms: %i%06i\n", (u32_t)(unix_time_ms/1000000), (u32_t)(unix_time_ms%1000000));
+		printk("  Local time: %s\n", time_to_string(unix_time_ms));
 	}
 	else {
 		printk("Error getting date_time (%i)!\n", err);
