@@ -88,12 +88,40 @@ static void modem_configure(void)
 #endif /* defined(CONFIG_LTE_LINK_CONTROL) */
 }
 
+#define TIMER_RELOAD_VALUE_MS 10000
+s64_t unix_time_ms = 0;
+
+void get_current_time_callback(struct k_timer *timer_id)
+{
+	int err = 0;
+
+	// If the time stamp has not been set, try to acquire it from the date_time library
+	if(unix_time_ms == 0){
+		printk("Attempting to acquire time and date from date_time library...\n");
+		err = date_time_now(&unix_time_ms);
+	}
+	//   otherwise, simply increment the timestamp based on the reload value
+	else {
+		unix_time_ms += TIMER_RELOAD_VALUE_MS;
+	}
+
+	// Check if we have successfully acquired a timestamp, and print it out if we have
+	if(err == 0){
+		printk("Time update:\n");
+		printk("  Unix time ms: %i%06i\n", (u32_t)(unix_time_ms/1000000), (u32_t)(unix_time_ms%1000000));
+	}
+	else {
+		printk("Error getting date_time (%i)!\n", err);
+	}
+}
+
+K_TIMER_DEFINE(get_current_time_timer, get_current_time_callback, NULL);
+
 void main(void)
 {
 	int err;
-	s64_t unix_time_ms;
 
-	printk("The MQTT simple sample started\n");
+	printk("MQTT simple sample with date_time started\n");
 
 	modem_configure();
 
@@ -101,16 +129,12 @@ void main(void)
 
 	date_time_update();
 
-	// Add some delay to ensure the date_time can be read from the server before we ask for a date_time update
-	k_sleep(K_SECONDS(10));
-
-	err = date_time_now(&unix_time_ms);
-	// TODO: Figure out why signed 64-bit numbers can't be printed directly using %lld
-	printk("Date_time: %i %i\n", (u32_t)(unix_time_ms/1000000), (u32_t)(unix_time_ms%1000000));
+	// Schedule a callback for reading out date_time. 
+	// Delay the first callback by 10 seconds to give the date_time library time to access the remote NTP server. 
+	k_timer_start(&get_current_time_timer, K_SECONDS(10), K_MSEC(TIMER_RELOAD_VALUE_MS));
 
 	do {
 		err = app_mqtt_run();
-		printk("Main loop...\n");
 	}while(err == 0);
 
 	app_mqtt_disconnect();
